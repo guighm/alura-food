@@ -1,11 +1,14 @@
 package br.com.alurafood.pagamentos.service;
 
+import java.util.Optional;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired; 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import br.com.alurafood.pagamentos.dto.PagamentoDto;
+import br.com.alurafood.pagamentos.http.PedidoClient;
 import br.com.alurafood.pagamentos.model.Pagamento;
 import br.com.alurafood.pagamentos.model.Status;
 import br.com.alurafood.pagamentos.repository.PagamentoRepository;
@@ -19,6 +22,9 @@ public class PagamentoService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private PedidoClient pedido;
 
     public Page<PagamentoDto> obterTodos(Pageable paginacao) {
         return repository
@@ -49,5 +55,29 @@ public class PagamentoService {
 
     public void excluirPagamento(Long id) {
         repository.deleteById(id);
+    }
+
+    public void confirmarPagamento(Long id){
+        Optional<Pagamento> pagamento = repository.findById(id);
+
+        if (!pagamento.isPresent()) {
+            throw new EntityNotFoundException();
+        }
+
+        pagamento.get().setStatus(Status.CONFIRMADO);
+        repository.save(pagamento.get());
+        pedido.atualizaPagamento(pagamento.get().getPedidoId());
+    }
+
+    public void alteraStatus(Long id) {
+        Optional<Pagamento> pagamento = repository.findById(id);
+
+        if (!pagamento.isPresent()) {
+            throw new EntityNotFoundException();
+        }
+
+        pagamento.get().setStatus(Status.CONFIRMADO_SEM_INTEGRACAO);
+        repository.save(pagamento.get());
+
     }
  }
